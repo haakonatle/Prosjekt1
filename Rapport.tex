@@ -1,0 +1,384 @@
+\documentclass[norsk,a4paper,12pt]{article}
+\usepackage[T1]{fontenc} %for å bruke æøå
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx} %for å inkludere grafikk
+\usepackage{verbatim} %for å inkludere filer med tegn LaTeX ikke liker
+\usepackage{caption}
+\usepackage{subcaption}
+\bibliographystyle{plain}
+
+\title{Utforsking av elektriske signaler gjennom multimetre og AD-omformere}
+\author{Alan Smithee Navnesen}
+\date{\today}
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+Vi har utforsket effekten av multimetere på kretsen de måler, ved å koble to multimetere til hverandre og måle effektene ved ulike funksjonsinnstillinger. Vi fant også nøyaktigheten i multimeterne når disse skulle måle to ulike motstander, og fant at disse var i nesten alle tilfeller korrekte innenfor usikkerhet. Videre undersøkte vi hvordan vi optimaliserer informasjon som omformes til digitale data gjennom en AD-omformer, og brukte den digitale dataen til å lage en lineær regresjon for ulike frekvenser til å estimere kapasitansen i en krets, som vi fant til å være $C = 0.02 \cdot 10^{-6} \ F$.
+
+\end{abstract}
+
+\section{Introduksjon}
+Å finne elektriske størrelser som motstand, spenning og strøm er av høyeste viktighet innen eksperimentell vitenskap, da man ofte finner mange andre størrelser indirekte gjennom disse elektriske signaler. Et instrument som kan hjelpe oss med dette er multimeteret, som kan fange opp alle disse tre størrelsene i samme apparat. Fordi disse størrelsene er så viktige, er det naturlig nok nyttig å utforske hvordan disse multimetrene fungerer og hvor nøyaktige de er. 
+
+Et annet instrument som er ofte brukt i målinger, er en analog-til-digital omformer, som tar det elektriske signalet og overfører det til datamaskinen for videre analyse og lagring. Det er viktig at dataen blir behandlet korrekt når den overføres til digitalt format, slik at man optimaliserer den informasjonen man videre bearbeider.
+
+
+\section{Teori}
+\subsection{Multimeter}
+Et multimeter kan måle tre ulike verdier; motstand, strøm og spenning. Den kan i utgangspunktet bare måle spenning, men har en arkitektur med variable motstander, som endrer seg slik at den også kan finne strøm og motstand. Altså kan de tre funksjonene et multimeter har representeres med tre ulike kretsdiagram.
+
+Figur 1a) viser voltmeterfunksjonen i et multimeter. Komponentene innhegnet i rødt finner spenningsfallet over den veldig høye indre resistansen $R_0$, og med en veldig lav resistans i den variable resistansen $R$. 
+
+Figur 1b) viser amperemeterfunksjonen i et multimeter. Her er den variable resistansen $R$ igjen veldig lav for ikke å forstyrre strømmen som går igjennom den. Voltmeteret måler da spenningsfallet over $R$, og finner strømmen ved:
+
+
+\begin{equation}
+V = RI
+\label{eq:ohm}
+\end{equation}
+\[I = \frac{V}{R}\]
+der V er spenningsfallet, R er resistansen og I er strømmen.
+
+Figur 1c) viser ohmmeterfunksjonen i et multimeter. Dette ser vi ved at vi kobler på en strømkilde på 9 volt, som da går igjennom motstanden. Siden vi har spenningen og finner strømmen på samme måte som før, finner vi motstanden ved en omskriving av Ligning (1).
+
+For en RC-krets har vi også:
+
+\begin{equation}
+\omega_0 = \frac{1}{RC}
+\label{eq:ohm}
+\end{equation}
+der $\omega_0$ er kretsens karakteristiske frekvens, R er resistansen i kretsen og C er kapasitansen i kretsen. 
+
+
+
+\begin{figure}
+\centering
+\begin{minipage}{.3\textwidth}
+  \centering
+  \includegraphics[width = 40mm]{Bilder/Krets1.png}\\
+  \captionof*{figure}{a) Kretsdiagram for voltmeterfunksjonen i et multimeter.}
+  \label{fig:krets1}
+\end{minipage}%
+\begin{minipage}{.1\textwidth}
+  \centering
+  \captionof*{figure}{ }
+  \label{fig:space}
+\end{minipage}%
+\begin{minipage}{.3\textwidth}
+  \centering
+  \includegraphics[width = 38mm]{Bilder/Krets2.png}\\
+  \captionof*{figure}{b) Kretsdiagram for amperemeterfunksjonen i et multimeter.}
+  \label{fig:krets2}
+\end{minipage}
+\begin{minipage}{.3\textwidth}
+  \centering
+  \includegraphics[width = 40mm]{Bilder/Krets3.png}\\
+  \captionof*{figure}{c) Kretsdiagram for ohmmeterfunksjonen i et multimeter.}
+  \label{fig:krets3}
+\end{minipage}
+\caption{Tre kretsdiagram for de ulike multimeterfunksjonene. Alle figurer er hentet fra oppgaveteksten.}
+  \label{fig:kretser}
+\end{figure}
+
+\subsection{AD-omformer}
+Når vi analyserer et periodisk signal, som vi ofte gjør i AD-omformere, vil ofte gjennomsnittet ikke være særlig brukbart - eksempelvis vil et sinussignal over lengre tid få et gjennomsnitt på 0. Det finnes en annen verdi man heller kan bruke i slike situasjoner ved navn Root-Mean-Square (RMS), eller størrelsens effektivverdi. Dette er spesielt nyttig når man analyserer vekselstrøm, da effektivverdien er den tilsvarende verdien i en likestrøm som gir samme effektavsetning i en motstand.
+For ulike funksjonstyper tar RMS ulike former. 
+For en trekantbølge har vi:
+\begin{equation}
+RMS_{triangle} = \frac{A}{\sqrt{3}},
+\label{eq:rmstriangle}
+\end{equation}
+der $RMS_{triangle}$ er Root-Mean-Square for trekantbølgen, og A er amplituden på bølgen.
+For en sinusbøle har vi:
+\begin{equation}
+RMS_{sine} = \frac{A}{\sqrt{2}},
+\label{eq:rmssine}
+\end{equation}
+der $RMS_{sine}$ er Root-Mean-Square for sinusbølgen, og A er amplituden på bølgen.
+
+\subsection{Usikkerhet}
+
+Når vi måler usikkerheten for to ulike verdier $b$ og $c$, og skal finne usikkerheten for en kvotient $a = \frac{b}{c}$ av disse verdiene, bruker vi$^{[1]}$:
+
+\begin{equation}
+\left(\frac{\delta a}{a}\right)^2 = \left(\frac{\delta b}{b}\right)^2 + \left(\frac{\delta c}{c}\right)^2
+\label{eq:uncertainty}
+\end{equation}
+
+der $\delta a$, $\delta b$ og $\delta c$ er usikkerheten i henholdsvis $a$, $b$ og $c$.
+
+
+
+\section{Eksperimentelt}
+\subsection{Multimeter}
+
+Vi brukte to ulike labmultimetere av typene FLUKE 45 og FLUKE 75. Først, for å utforske hvordan multimetrene påvirker kretsen de skal måle, koblet vi disse simpelthen direkte opp mot hverandre (som vist i figur 2), og leste av verdier for når vi satte multimeterne på ulike innstillinger. 
+
+Først satte vi det ene multimeteret på strømmåling, og det andre på motstandsmåling. Vi leste av verdier og byttet om på instrumentene. Vi gjorde samme prosedyre for spenningsmåling mot motstandsmåling og spenningsmåling mot strømmåling. 
+
+\begin{figure}
+\begin{center}
+  \includegraphics[width = 40mm]{Bilder/multikrets.png}\\
+  \caption{Kretsdiagram for oppkoblingen av multimetrene. }\label{fig:krets}
+  \end{center}
+\end{figure}
+
+Vi koblet så opp multimeterne hver for seg opp til to ulike motstander, $R_1$ og $R_2$, med resistans på henholdsvis $10 \ \Omega$ og $1$ M$\Omega$. Vi målte motstandene med hvert multimeter, og skrev ned verdiene. Vi fant også oppløsningen og nøyaktigheten for hvert multimeter fra databladene, som står i tabell 1 og 2 for de relevante resistansene $R_1$ og $R_2$. 
+
+\begin{table}
+  \begin{center}
+  \caption{Oppløsning for motstandsmåling i FLUKE 45 og FLUKE 75, tatt fra databladene}
+  \begin{tabular}{|c|c|c|} \hline
+  \textbf{} & \textbf{Oppløsning for $10 \ \Omega$ (m$\Omega$)} & \textbf{Oppløsning for $1$ M$\Omega$ ($\Omega$)} \\ \hline
+  \textbf{FLUKE 45} & 1  & 100 \\ \hline
+  \textbf{FLUKE 75} & 100 & 1000 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:oppløsning}
+\end{table}
+
+\begin{table}
+  \begin{center}
+  \caption{Nøyaktighet for motstandsmåling i FLUKE 45 og FLUKE 75, tatt fra databladene.}
+  \begin{tabular}{|c|c|c|} \hline
+  \textbf{} & \textbf{Nøyaktighet for $10 \ \Omega$} & \textbf{Nøyaktighet for $1$ M$\Omega$} \\ \hline
+  \textbf{FLUKE 45} & $\pm (0.05\% + 8 + 0.02 \ \Omega)$  & $\pm (0.25\% + 6)$ \\ \hline
+  \textbf{FLUKE 75} & $\pm (0.5\% + 2)$ & $\pm (0.5\% + 1)$ \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:nøyaktighet}
+\end{table}
+
+Vi brukte så et breadboard for å koble opp en krets som vist i figur 3. Her brukte vi +15V-utgangen på spenningskilden, og skrudde opp spenningen til en passende verdi. Gitt at motstandene tåler opp til omtrent 0.25 Watt, skrudde vi spenningen til en passende verdi på 1.58 V.
+
+Vi målte spenningen og strømmen gjennom $R_1$ og $R_2$ med henholdsvis FLUKE 45 og FLUKE 75. Med disse målingene regnet vi verdien for resistansen i motstandene, med usikkerhet som oppgitt i tabell 3, tatt fra databladene.
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = 40mm]{Bilder/RCkrets.png}\\
+\caption{Kretsdiagram for kretsen med to motstander $R_1$ og $R_2$, to multimetre satt til strømmåling og spenningsmåling, og en spenningskilde. Figur hentet fra oppgaveteksten.}\label{fig:rckrets}
+\end{center}
+\end{figure}
+\begin{table}
+  \begin{center}
+  \caption{Nøyaktighet for strømmåling i FLUKE 75 og spenningssmåling i FLUKE 45 i domenene av verdier målt over motstandene $R_1$ og $R_2$, tatt fra databladene.}
+  \begin{tabular}{|c|c|c|} \hline
+  \textbf{} & \textbf{Nøyaktighet for $10 \ \Omega$} & \textbf{Nøyaktighet for $1$ M$\Omega$} \\ \hline
+  \textbf{Strøm (FLUKE 75)} & $\pm (0.05\% +5)$  & $\pm (0.5\% + 15)$ \\ \hline
+  \textbf{Spenning (FLUKE 45)} & $\pm (0.4\% + 1)$ & $\pm (0.4\% + 1)$ \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:nøyaktighetstrømogspenning}
+\end{table}
+
+
+\subsection{AD-omformer}
+
+Vi koblet så opp et oscilloscop med innebygd signalgenerator, en modell av PicoScope 2000-serien, til datamaskinen, og brukte programmet PicoScope 6 til analyse. Vi satte signalgeneratoren til 1 kHz sinus, og satte amplituden til 1 V. 
+Vi innstilte programmet som anvist i appendiks C i oppgaveteksten$^{[2]}$. Vi koblet et voltmeter til picoscopet med en BNC-til-banan-overgang - i dette tilfellet brukte vi FLUKE 75. Vi fant med Ligning (4) effektivverdien til bølgen, og sammenlignet dette med avlest spenning fra voltmeteret, både for en sinusbølge og for en trekantbølge. 
+
+Deretter koblet vi opp en RC-krets med påtrykt spenning fra en frekvensgenerator, motstand på 10 k$\Omega$, og oscilloscop, som vist i figur 4. Vi leste så av amplituden på spenningen ut og spenningen inn i picoscopet for ulike frekvenser. Vi gjorde ekstra målinger intervallet av frekvenser der spenningen falt kraftig. 
+
+Med disse verdiene plottet vi spenningen ut over frekvensene og lagde en lineær regresjon i området hvor spenningen så ut til å falle logaritmisk.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = 40mm]{Bilder/frekvenskrets.png}\\
+\caption{Kretsdiagram for kretsen med to motstander $R_1$ og $R_2$, to multimetre satt til strømmåling og spenningsmåling, og en spenningskilde. Figur hentet fra oppgaveteksten.}\label{fig:frekvenskrets}
+\end{center}
+\end{figure}
+
+\section{Resultater}
+
+\subsection{Multimeter}
+
+Når vi koblet opp multimeterne mot hverandre, og stilte dem inn på ulike funksjoner, fikk vi resultatene som vist i tabell 4 (strømmåling mot motstandsmåling), tabell 5 (spenningsmåling mot motstandsmåling) og tabell 6 (spenningsmåling mot strømmåling)
+
+\begin{table}
+  \begin{center}
+  \caption{Verdier avlest av multimeterene satt til strømmåling og motstandsmåling når instrumentene langs første kolonne målte størrelsene langs første rad igjennom det motsatte apparatet}
+  \begin{tabular}{|c|c|c|} \hline
+  \textit{Når $\rightarrow$ er målt med $\downarrow$} & \textbf{Strøm (mA)} & \textbf{Motstand ($\Omega$)} \\ \hline
+  \textbf{FLUKE 45} & 0.4803  & 5.548 \\ \hline
+  \textbf{FLUKE 75} & 0.76 & 10.8 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:strømmotmotstand}
+\end{table}
+
+\begin{table}
+  \begin{center}
+  \caption{Verdier avlest av multimeterene satt til spenningsmåling og motstandsmåling når instrumentene langs første kolonne målte størrelsene langs første rad igjennom det motsatte apparatet}
+  \begin{tabular}{|c|c|c|} \hline
+  \textit{Når $\rightarrow$ er målt med $\downarrow$} & \textbf{Spenning (mV)} & \textbf{Motstand ($M \Omega$)} \\ \hline
+  \textbf{FLUKE 45} & 693.1  & 11.1 \\ \hline
+  \textbf{FLUKE 75} & 1538 & 10.02 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:spenningmotmotstand}
+\end{table}
+
+
+\begin{table}
+  \begin{center}
+  \caption{Verdier avlest av multimeterene satt til spenningsmåling og strømmåling når instrumentene langs første kolonne målte størrelsene langs første rad igjennom det motsatte apparatet}
+  \begin{tabular}{|c|c|c|} \hline
+  \textit{Når $\rightarrow$ er målt med $\downarrow$} & \textbf{Spenning (mV)} & \textbf{Strøm (mV)} \\ \hline
+  \textbf{FLUKE 45} & 0.005  & 0.0 \\ \hline
+  \textbf{FLUKE 75} & 0.0 & 0.01 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:spenningmotstrøm}
+\end{table}
+
+Vi brukte også multimeterene til å måle resistansene gjennom motstandene $R_1$ og  $R_2$, hvor resultatet står i tabell 7. Vi fant også usikkerheten til disse ved hjelp av nøyaktigheten fra databladene som tidligere oppgitt i tabell 2, hvor resultatet står i tabell 8.
+
+
+
+\begin{table}
+  \begin{center}
+  \caption{Resistans gjennom motstandene $R_1$ og $R_2$ som lest av multimetrene FLUKE 45 og FLUKE 75.}
+  \begin{tabular}{|c|c|c|} \hline
+  \textit{} & \textbf{$R_1$ ($\Omega$)} & \textbf{$R_2$ (M $\Omega$)} \\ \hline
+  \textbf{FLUKE 45} & 10.09  & 0.998 \\ \hline
+  \textbf{FLUKE 75} & 10.1 & 1.000 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:resistans}
+\end{table}
+
+\begin{table}
+  \begin{center}
+  \caption{Beregnet usikkerhet i resistansene i $R_1$ og $R_2$ for de to multimeterne FLUKE 45 og FLUKE 75}
+  \begin{tabular}{|c|c|c|} \hline
+  \textit{} & \textbf{$\delta R_1$ ($\Omega$)} & \textbf{$\delta R_2$ (M$\Omega$)} \\ \hline
+  \textbf{FLUKE 45} & 0.03 & 0.008 \\ \hline
+  \textbf{FLUKE 75} & 0.2 & 0.006 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:usikkerhet}
+\end{table}
+
+
+Vi målte deretter strømmen gjennom kretsen i figur 3, samt spenning over kilden og spenning over motstanden, hvor resultatene står i tabell 9.
+
+
+\begin{table}
+  \begin{center}
+  \caption{Strøm og spenning over kilde/motstand i RC-krets, innsatt med motstand $R_1$ og $R_2$}
+  \begin{tabular}{|c|c|c|} \hline
+  \textit{} & \textbf{$R_1$} & \textbf{$R_2$} \\ \hline
+  \textbf{Strøm} & 0.03 & 8 \\ \hline
+  \textbf{Spenning over kilde} & 0.0 & 6 \\ \hline
+  \textbf{Spenning over motstand} & 0.0 & 6 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:strømogspenning}
+\end{table}
+
+Med disse verdiene kan man bruke Ligning (1) til å beregne verdien på resistansen i motstanden for både $R_1$ og $R_2$. Vi bruker spenningen over motstanden og strømmen i kretsen, samt nøyaktighet fra databladet (tabell 3) i Ligning (5) til å finne usikkerheten, og får:
+\[R_1 = 9.95 \pm 0.06 \ \Omega\]
+\[R_2 = 0.97 \pm 0.06 \ M\Omega\]
+
+\subsection{AD-omformer}
+
+Når vi satte opp et sinussignal i picoscopet, som man kan se i figur 5, og leste av spenning fra voltmeteret, fant vi at den lå på 0.693 mV. Gjennom PicoScope 6 kunne vi sette opp en scop-måling som gav en spenning på 706.2 mV. Analytisk finner vi ved Ligning (4) at den skal ligge på 707.1 mV. Når vi senket frekvensen på signalet, gikk spenningen på voltmeteret mer og mer mot den analytiske verdien.
+Vi gjentok samme prosedyre med et trekantsignal, som vist i figur 6, og fant da at voltmeteret gav en verdi på 547 mV, scop-målingen gav en verdi på 577 mV, og den analytiske verdien som man finner gjennom Ligning (3) ligger på 0.577 mV - igjen gikk verdien på voltmeteret mot den analytiske verdien dersom vi senket frekvensen på signalet.
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = 80mm]{Bilder/sinus.jpg}\\
+\caption{Skjermbilde av sinussignalet som vist i PicoScope 6.}\label{fig:sinus}
+\end{center}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = 80mm]{Bilder/trekant.jpg}\\
+\caption{Skjermbilde av trekantsignalet som vist i PicoScope 6.}\label{fig:trekant}
+\end{center}
+\end{figure}
+
+
+Vi målte deretter amplituden på spenningen inn og ut for ulike signalfrekvenser; resultatet står i tabell 10.
+
+\begin{table}
+  \begin{center}
+  \caption{Amplitude på spenning inn og spenning ut for ulike signalfrekvenser.}
+  \begin{tabular}{|c|c|c|c|c|c|c|} \hline
+  \textit{} & \textbf{10 Hz (V)} & \textbf{100 Hz (V)} & \textbf{1000 Hz (V)} \\ \hline
+  \textbf{$A_{inn}$} & 0.5765 & 0.979 & 0.9445 \\ \hline
+  \textbf{$A_{ut}$} & 0.565 & 0.82 & 0.147  \\ \hline
+  \textit{}  & \textbf{10 000 Hz (V)} & \textbf{100 000 Hz (V)} & \textbf{1 MHz (V)} \\ \hline
+  \textbf{$A_{inn}$}  & 0.929 & 0.199 & 0.0194 \\ \hline
+  \textbf{$A_{ut}$} & 0.016 & 0.000725 & 0.0006 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:amplitude}
+\end{table}
+
+Vi så at det var et skarpt fall mellom 10 000 og 100 000 Hz, så vi gjorde noen ekstra målinger i dette intervallet, som oppgitt i tabell 11. Med denne dataen lagde vi en lineærtilpasning forbi knekkpunktet, som vist i figur 7. Med dette kan vi vurdere hvilken kapasitans C vi kan hente ut fra disse dataene, og vi fant at intercept = log $\omega$ = 3.66. Samtidig har vi Ligning (2), som gir oss
+\[C = \frac{1}{R\omega_0} = 0.02 \cdot 10^{-6} F\]
+
+
+
+\begin{table}
+  \begin{center}
+  \caption{Amplitude på spenning inn og spenning ut for ulike signalfrekvenser, i intervallet 10 kHz - 1 MHz.}
+  \begin{tabular}{|c|c|c|c|c|c|c|} \hline
+  \textit{} & \textbf{30 000 Hz (V)} & \textbf{50 000 Hz (V)} & \textbf{} \\ \hline
+  \textbf{$A_{inn}$} & 0.85 & 0.706 & \\ \hline
+  \textbf{$A_{ut}$} & 0.00475 & 0.00205 &   \\ \hline
+  \textit{}  & \textbf{80 000 Hz (V)} & \textbf{300 000 Hz (V)} & \textbf{500 000Hz (V)} \\ \hline
+  \textbf{$A_{inn}$}  & 0.408 & 0.122 & 0.0215 \\ \hline
+  \textbf{$A_{ut}$} & 0.0009 & 0.00065 & 0.0007 \\ \hline
+  \end{tabular}
+  \end{center}
+  \label{tab:amplitude}
+\end{table}
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width = 80mm]{Bilder/linmod.png}\\
+\caption{Lineær modell for spenningsamplituden over frekvens.}\label{fig:linmod}
+\end{center}
+\end{figure}
+
+
+\section{Diskusjon}
+
+\subsection{Multimeter}
+
+Målingene vi fikk ved å koble opp multimeterne mot hverandre gir fysisk mening - når et multimeter måler strøm, må det være lav motstand slik at strømmen er uforstyrret (dette er også grunnen til at man ikke kan koble et amperemeter direkte opp mot en spenningskilde - den lave motstanden ville ført til at kretsen kortsluttet). Dette målte vi, som vist i tabell 4. På den annen side må motstanden være svært høy når multimeteret måler spenning, ettersom spenningen ville bli påvirket om noe av strømmen kunne gå gjennom multimeteret. Dette målte vi også, med verdier oppe i en magnitude på $10^{7} \ \Omega$. Når man derimot setter et multimeter på spenningsmåling og et multimeter på strømmåling, er det ingen spenningskilde som ville gitt utslag (til forskjell fra når man setter det ene multimeteret på motstandsmåling, som setter opp en spenning). Her målte vi også svært lave verdier - det faktum at vi ikke målte null spenning og strøm kan da forklares med usikkerhet i apparatene.
+
+Noe vi merket under målingene, var at FLUKE 45 oppgav flere desimaler enn FLUKE 75. Dessuten viste FLUKE 45 enheter, noe FLUKE 75 ikke gjør, som kan føre til forvirring og i verste fall feilavlesning. Med dette i tankene kan FLUKE 45 virke som et bedre og mer pålitelig instrument å bruke i eksperimenter. På den annen side er FLUKE 75 mer praktisk i den forstand at den er mindre og mer håndterbar.
+
+
+Med verdiene fra tabell 7 og 8 ser vi at gjennom direkte måling av resistansen i motstandene $R1$ og $R2$, ser vi at alle målingene er korrekte med de faktiske verdiene $10 \ \Omega$ og $1 \ M\Omega$, med unntak av målingen av $R1$ med FLUKE 45. Dette kan skyldes usikkerhet i selve motstandene, eller resistans i ledningene. For $R1$ var usikkerheten mindre med FLUKE 45, mens for $R2$ var usikkerheten litt mindre i FLUKE 75. 
+
+Når vi beregnet resistansene gjennom spenning og strøm, fant vi også her at verdiene er korrekte innenfor usikkerheten. Her målte vi strøm med FLUKE 75 og spenning med FLUKE 45, og usikkerheten ble beregnet ut fra usikkerhetene til disse funksjonene i de respektive multimeterne. Vi ser at usikkerheten er langt større enn direkte måling for $R2$, og større enn direkte måling av $R1$ med FLUKE 45, men litt mindre enn direkte måling med FLUKE 75. Det gir mening at usikkerheten er større, da vi her gjør flere individuelle målinger enn ved å simpelthen måle motstanden direkte.
+
+\subsection{AD-omformer}
+
+I målingene både for trekant-signalet og sinus-signalet var scop-målingene mer nøyaktige enn voltmetermålingene - dog gikk voltmetermålingene mot den analytiske verdien med lavere frekvens, og til slutt ville disse stemme med hverandre. Dette er fordi FLUKE 75 har en lav samplingfrekvens, slik at først når vi senker frekvensen (og dermed øker bølgelengden) vil den kunne plukke opp nok informasjon per svingning til å gi en nøyaktig effektivverdi. 
+
+Signalet vi sendte inn i picoscopet var et AC-signal, altså alternerer spenningen som sendes inn (det er dette som gir opphav til svingningene i bølgen). Om man setter en DC-komponent på dette, vil signalet forskyves langs y-aksen i plottet av spenning over tid, siden DC er et konstant signal. Hvis man har en slik sammensetning av AC- og DC-signal, kan man finne DC-komponenten på ulike vis; man kan for eksempel finne svingepunktet til svingningen - dette blir da de ekvivalente av et nullpunkt for AC-signalet, og dette punktets forskyvning langs y-aksen tilsvarer DC-komponentens størrelse. Man kan også ta gjennomsnittet av svingningen, hvor AC-komponenten da vil utligne seg selv og vi sitter kun igjen med y-forskyvningen, som blir DC-komponentens størrelse.
+
+
+\section{Konklusjon}
+
+Vi har utforsket hvordan multimetere vil påvirke kretsen de måler, noe vi gjorde ved å koble opp to multimetere FLUKE 45 og FLUKE 75 til hverandre og måle strøm, spenning og motstand for ulike funksjoner. Vi fant med dette at de avleste verdiene var som forventet, og gikk videre til å måle motstand både direkte og ved bruk av Ohms lov. Nesten alle disse målingene gav korrekt verdi innenfor usikkerheten som var oppgitt i databladene.
+Vi brukte så en AD-omformer til å teste hvordan informasjonen overføres til digitale data. Vi så at voltmeteret, grunnet dens lave samplingfrekvens, fikk ukorrekte verdier for effektivverdien i et AC-signal, noe som korrigertes med lavere frekvens. Ved å så måle spenningen i en krets med en påtrykt AC-komponent med ulike frekvenser, kunne vi bruke en lineær regresjon til å beregne en verdi for kapasitansen i kretsen, som vi fant til å være $C =0.02 \cdot 10^{-6} \ F$. 
+
+
+\section{Referanser}
+[1] \ \ Squires, \textit{Practical Physics} (Cambridge University Press, 2012), 29.
+
+[2] \ \ Oppgavetekst, Strøm og spenning (2022)\\
+\end{document}
